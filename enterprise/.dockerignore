@@ -1,0 +1,9 @@
+app
+server
+enterprise
+*.md
+.git
+.gitignore
+Dockerfile
+.dockerignore
+docker-compose.yml

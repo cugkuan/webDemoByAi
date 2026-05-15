@@ -21,7 +21,7 @@ BASE_URL="http://localhost:8080"
 echo -e "${CYAN}检查服务状态...${NC}"
 if ! curl -s "$BASE_URL/api/tasks" > /dev/null 2>&1; then
     echo -e "${RED}❌ 错误：服务未运行，请先启动应用${NC}"
-    echo "启动方法: cd /Users/kuan/Downloads/web-demo/enterprise && go build -o app ./cmd/server/ && ./app"
+    echo "启动方法: cd /Users/kuan/Downloads/web-demo/enterprise && docker compose up -d"
     exit 1
 fi
 echo -e "${GREEN}✓ 服务已运行${NC}"

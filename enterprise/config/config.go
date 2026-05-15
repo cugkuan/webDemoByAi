@@ -127,6 +127,9 @@ func Load(path string) (*Config, error) {
 	if v := os.Getenv("LOG_LEVEL"); v != "" {
 		cfg.Log.Level = v
 	}
+	if v := os.Getenv("LOG_FORMAT"); v != "" {
+		cfg.Log.Format = v
+	}
 	if v := os.Getenv("GIN_MODE"); v != "" {
 		cfg.Server.Mode = v
 	}

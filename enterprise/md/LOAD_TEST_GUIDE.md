@@ -13,13 +13,25 @@
 
 ### 前提条件
 
+#### Docker 方式（推荐）
 ```bash
-# 1. 启动应用
-cd /Users/kuan/Downloads/web-demo/enterprise-simple
+# 1. 启动应用（MySQL + Redis + API）
+cd /Users/kuan/Downloads/web-demo/enterprise
+docker compose up -d
+
+# 2. 运行测试
+cd /Users/kuan/Downloads/web-demo/enterprise
+```
+
+#### 本地编译运行
+```bash
+# 1. 编译并启动
+cd /Users/kuan/Downloads/web-demo/enterprise
+go build -o app ./cmd/server/
 ./app
 
 # 2. 另一个终端运行测试
-cd /Users/kuan/Downloads/web-demo/enterprise-simple
+cd /Users/kuan/Downloads/web-demo/enterprise
 ```
 
 ### 运行演示脚本

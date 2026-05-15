@@ -20,9 +20,22 @@
 
 ## 常用命令
 
+### Docker 方式（推荐）
+```bash
+# 一键启动（MySQL + Redis + API）
+docker compose up -d
+
+# 查看日志
+docker compose logs -f app
+
+# 停止
+docker compose down
+```
+
+### 本地编译运行
 ```bash
 # 编译
-go build -o app *.go
+go build -o app ./cmd/server/
 
 # 运行（输出日志到 stdout）
 ./app

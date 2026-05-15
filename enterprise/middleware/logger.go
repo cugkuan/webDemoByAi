@@ -50,12 +50,3 @@ func Logger(logger zerolog.Logger) gin.HandlerFunc {
 	}
 }
 
-func toString(v interface{}) string {
-	if v == nil {
-		return ""
-	}
-	if s, ok := v.(string); ok {
-		return s
-	}
-	return ""
-}

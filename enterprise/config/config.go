@@ -1,7 +1,9 @@
 package config
 
 import (
+	"fmt"
 	"os"
+	"strconv"
 	"time"
 
 	"gopkg.in/yaml.v3"
@@ -103,7 +105,9 @@ func Load(path string) (*Config, error) {
 	// 尝试从 YAML 文件加载
 	if path != "" {
 		data, err := os.ReadFile(path)
-		if err == nil {
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "警告: 配置文件 %s 不存在，使用默认配置\n", path)
+		} else {
 			if err := yaml.Unmarshal(data, cfg); err != nil {
 				return nil, err
 			}
@@ -131,12 +135,9 @@ func Load(path string) (*Config, error) {
 }
 
 func parseInt(s string, defaultVal int) int {
-	var v int
-	for _, c := range s {
-		if c < '0' || c > '9' {
-			return defaultVal
-		}
-		v = v*10 + int(c-'0')
+	v, err := strconv.Atoi(s)
+	if err != nil {
+		return defaultVal
 	}
 	return v
 }

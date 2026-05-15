@@ -11,13 +11,14 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog"
-	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 
 	"web-demo/enterprise/config"
 	"web-demo/enterprise/internal/cache"
+	"web-demo/enterprise/internal/database"
 	"web-demo/enterprise/internal/repository"
 	"web-demo/enterprise/internal/router"
+	"web-demo/enterprise/pkg/logger"
 )
 
 var log zerolog.Logger
@@ -35,7 +36,7 @@ func main() {
 	}
 
 	// 初始化日志
-	log = initLogger(cfg.Log)
+	log = logger.New(cfg.Log)
 	log.Info().Msg("=== 系统启动 ===")
 
 	// 设置 Gin 模式
@@ -48,7 +49,7 @@ func main() {
 
 	// 初始化数据库
 	log.Info().Msg("初始化数据库...")
-	db := initDatabase(cfg)
+	db := database.New(cfg, log)
 
 	// 自动迁移
 	log.Info().Msg("执行数据库迁移...")
@@ -101,61 +102,7 @@ func main() {
 	log.Info().Msg("服务器已安全关闭")
 }
 
-func initLogger(cfg config.LogConfig) zerolog.Logger {
-	level, err := zerolog.ParseLevel(cfg.Level)
-	if err != nil {
-		level = zerolog.InfoLevel
-	}
-
-	if cfg.Format == "json" {
-		return zerolog.New(os.Stdout).
-			Level(level).
-			With().
-			Timestamp().
-			Caller().
-			Logger()
-	}
-
-	return zerolog.New(zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339}).
-		Level(level).
-		With().
-		Timestamp().
-		Caller().
-		Logger()
-}
-
-func initDatabase(cfg *config.Config) *gorm.DB {
-	dsn := cfg.Database.DSN
-	if dsn == "" {
-		dsn = os.Getenv("MYSQL_DSN")
-	}
-	if dsn == "" {
-		dsn = "root@tcp(127.0.0.1:3306)/task_db?charset=utf8mb4&parseTime=True&loc=Local"
-		log.Warn().Msg("Using default DSN (no password); set MYSQL_DSN to override")
-	}
-
-	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
-	if err != nil {
-		log.Fatal().Err(err).Msg("数据库连接失败")
-	}
-
-	sqlDB, err := db.DB()
-	if err != nil {
-		log.Fatal().Err(err).Msg("获取数据库实例失败")
-	}
-	sqlDB.SetMaxOpenConns(cfg.Database.MaxOpenConns)
-	sqlDB.SetMaxIdleConns(cfg.Database.MaxIdleConns)
-	sqlDB.SetConnMaxLifetime(cfg.Database.ConnMaxLifetime)
-
-	log.Info().
-		Int("max_open", cfg.Database.MaxOpenConns).
-		Int("max_idle", cfg.Database.MaxIdleConns).
-		Dur("max_lifetime", cfg.Database.ConnMaxLifetime).
-		Msg("数据库连接池配置完成")
-
-	return db
-}
-
+// initSeedData 初始化示例数据（仅首次启动时）
 func initSeedData(db *gorm.DB) {
 	repo := repository.NewTaskRepo(db)
 	count, err := repo.Count()
@@ -171,6 +118,7 @@ func initSeedData(db *gorm.DB) {
 	}
 }
 
+// printBanner 打印启动横幅
 func printBanner(port int) {
 	fmt.Println("╔════════════════════════════════════════════╗")
 	fmt.Println("║      Gin REST API + 2级缓存系统启动         ║")
@@ -182,6 +130,7 @@ func printBanner(port int) {
 	fmt.Println("  GET    /health/liveness  - 存活检查")
 	fmt.Println("  GET    /health/readiness - 就绪检查")
 	fmt.Println("  GET    /api/tasks        - 获取所有任务")
+	fmt.Println("  GET    /api/tasks/count  - 统计任务总数")
 	fmt.Println("  GET    /api/tasks/{id}   - 获取单个任务")
 	fmt.Println("  POST   /api/tasks        - 创建任务")
 	fmt.Println("  PUT    /api/tasks/{id}   - 更新任务")

@@ -96,7 +96,11 @@ func healthCheck(db *gorm.DB, c *cache.Cache) gin.HandlerFunc {
 			"db":     checkDBHealth(db),
 			"redis":  checkRedisHealth(c),
 		}
-		ctx.JSON(http.StatusOK, status)
+		ctx.JSON(http.StatusOK, gin.H{
+			"code":    200,
+			"message": "成功",
+			"data":    status,
+		})
 	}
 }
 

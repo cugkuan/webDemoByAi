@@ -51,8 +51,9 @@ type CacheConfig struct {
 
 // LogConfig 日志配置
 type LogConfig struct {
-	Level  string `yaml:"level"`
-	Format string `yaml:"format"` // json 或 text
+	Level    string `yaml:"level"`
+	Format   string `yaml:"format"`    // json 或 text
+	FilePath string `yaml:"file_path"` // 日志文件路径（为空则只输出到控制台）
 }
 
 // RateConfig 限流配置
@@ -129,6 +130,9 @@ func Load(path string) (*Config, error) {
 	}
 	if v := os.Getenv("LOG_FORMAT"); v != "" {
 		cfg.Log.Format = v
+	}
+	if v := os.Getenv("LOG_FILE_PATH"); v != "" {
+		cfg.Log.FilePath = v
 	}
 	if v := os.Getenv("GIN_MODE"); v != "" {
 		cfg.Server.Mode = v

@@ -25,17 +25,17 @@ curl -s "$BASE_URL/health" | jq .
 echo ""
 sleep 1
 
-# 2. 获取任务列表 - 测试缓存 MISS + DB QUERY
-echo -e "${YELLOW}2️⃣  获取任务列表（首次 - 缓存 MISS）${NC}"
-echo "发送请求: GET /api/tasks"
-curl -s "$BASE_URL/api/tasks" | jq .
+# 2. 获取单个任务 - 测试缓存 MISS + DB QUERY
+echo -e "${YELLOW}2️⃣  获取单个任务（首次 - 缓存 MISS）${NC}"
+echo "发送请求: GET /api/tasks/1"
+curl -s "$BASE_URL/api/tasks/1" | jq .
 echo ""
 sleep 1
 
-# 3. 再次获取任务列表 - 测试缓存 HIT
-echo -e "${YELLOW}3️⃣  获取任务列表（第二次 - 缓存 HIT）${NC}"
-echo "发送请求: GET /api/tasks"
-curl -s "$BASE_URL/api/tasks" | jq .
+# 3. 再次获取单个任务 - 测试缓存 HIT
+echo -e "${YELLOW}3️⃣  获取单个任务（第二次 - 缓存 HIT）${NC}"
+echo "发送请求: GET /api/tasks/1"
+curl -s "$BASE_URL/api/tasks/1" | jq .
 echo ""
 sleep 1
 

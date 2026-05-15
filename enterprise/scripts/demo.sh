@@ -33,13 +33,13 @@ curl -s -X POST "$BASE_URL/api/tasks" \
   -d '{"title":"缓存测试任务","done":false}' | jq '.'
 echo ""
 
-echo -e "${YELLOW}2. 第一次获取所有任务（查询数据库）${NC}"
-time curl -s -X GET "$BASE_URL/api/tasks" | jq '.'
+echo -e "${YELLOW}2. 获取单个任务（查询数据库 + L1/L2 缓存写入）${NC}"
+time curl -s -X GET "$BASE_URL/api/tasks/1" | jq '.'
 echo ""
 
-echo -e "${YELLOW}3. 等待 1 秒后再次获取所有任务（L1 缓存命中）${NC}"
+echo -e "${YELLOW}3. 等待 1 秒后再次获取单个任务（L1 缓存命中）${NC}"
 sleep 1
-time curl -s -X GET "$BASE_URL/api/tasks" | jq '.'
+time curl -s -X GET "$BASE_URL/api/tasks/1" | jq '.'
 echo ""
 
 echo -e "${YELLOW}4. 获取单个任务（查询数据库 + L1/L2 缓存写入）${NC}"

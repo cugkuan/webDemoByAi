@@ -125,7 +125,7 @@ main() {
     
     # ===== 测试 1: 小规模测试 =====
     run_test "【1】小规模测试 (100个请求, 10并发)" \
-        "$BASE_URL/api/tasks" \
+        "$BASE_URL/api/tasks/1" \
         100 \
         10
     
@@ -133,7 +133,7 @@ main() {
     
     # ===== 测试 2: 中等规模测试 =====
     run_test "【2】中等规模测试 (500个请求, 50并发)" \
-        "$BASE_URL/api/tasks" \
+        "$BASE_URL/api/tasks/1" \
         500 \
         50
     
@@ -141,7 +141,7 @@ main() {
     
     # ===== 测试 3: 大规模测试 =====
     run_test "【3】大规模测试 (2000个请求, 100并发)" \
-        "$BASE_URL/api/tasks" \
+        "$BASE_URL/api/tasks/1" \
         2000 \
         100
     

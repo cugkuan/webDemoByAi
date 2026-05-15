@@ -57,7 +57,10 @@ services:
       REDIS_ADDR: "redis:6379"
       GIN_MODE: "release"
       LOG_LEVEL: "info"
+      LOG_FILE_PATH: "/app/logs/app.log"
       CONFIG_PATH: "/app/config.yaml"
+    volumes:
+      - app_logs:/app/logs
     depends_on:
       mysql:
         condition: service_healthy
@@ -67,3 +70,4 @@ services:
 volumes:
   mysql_data:
   redis_data:
+  app_logs:

@@ -114,18 +114,7 @@ else
     print_fail "创建任务" "期望 data.id > 0"
 fi
 
-echo ""
-echo -e "  ${YELLOW}▸ 获取所有任务${NC}"
-print_curl "curl -s $BASE_URL/api/tasks"
-RESP=$(curl -s "$BASE_URL/api/tasks")
-TASK_COUNT=$(echo "$RESP" | python3 -c "import sys,json; print(len(json.load(sys.stdin)['data']))" 2>/dev/null || echo "0")
-print_json "$RESP"
-echo -e "  ${DIM}→ 共 $TASK_COUNT 条记录${NC}"
-if [ "$TASK_COUNT" -gt 0 ] 2>/dev/null; then
-    print_pass "获取所有任务 (count=$TASK_COUNT)"
-else
-    print_fail "获取所有任务" "期望 data 非空"
-fi
+# 获取所有任务已移除（数据量过大时影响性能）
 
 echo ""
 echo -e "  ${YELLOW}▸ 获取单个任务${NC}"

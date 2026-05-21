@@ -42,6 +42,35 @@ func (h *TaskHandler) GetTasks(c *gin.Context) {
 	c.PureJSON(http.StatusOK, response.Success(tasks))
 }
 
+// GetTasksPage 分页获取任务
+func (h *TaskHandler) GetTasksPage(c *gin.Context) {
+	pageStr := c.DefaultQuery("page", "1")
+	pageSizeStr := c.DefaultQuery("page_size", "10")
+
+	page, err := strconv.Atoi(pageStr)
+	if err != nil || page < 1 {
+		page = 1
+	}
+
+	pageSize, err := strconv.Atoi(pageSizeStr)
+	if err != nil || pageSize < 1 || pageSize > 100 {
+		pageSize = 10
+	}
+
+	tasks, total, err := h.svc.GetTasksPage(page, pageSize)
+	if err != nil {
+		c.Error(err)
+		return
+	}
+
+	c.PureJSON(http.StatusOK, response.Success(gin.H{
+		"items":     tasks,
+		"total":     total,
+		"page":      page,
+		"page_size": pageSize,
+	}))
+}
+
 // GetTask 获取单个任务
 func (h *TaskHandler) GetTask(c *gin.Context) {
 	id, ok := parseID(c)

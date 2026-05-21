@@ -25,6 +25,25 @@ func (r *TaskRepo) FindAll() ([]model.Task, error) {
 	return tasks, nil
 }
 
+// FindPage 分页获取任务
+func (r *TaskRepo) FindPage(page, pageSize int) ([]model.Task, int64, error) {
+	var tasks []model.Task
+	var total int64
+
+	// 先统计总数
+	if err := r.db.Model(&model.Task{}).Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	// 分页查询
+	offset := (page - 1) * pageSize
+	if err := r.db.Order("id DESC").Offset(offset).Limit(pageSize).Find(&tasks).Error; err != nil {
+		return nil, 0, err
+	}
+
+	return tasks, total, nil
+}
+
 // FindByID 根据 ID 获取任务
 func (r *TaskRepo) FindByID(id uint) (*model.Task, error) {
 	var task model.Task

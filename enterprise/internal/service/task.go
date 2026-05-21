@@ -28,6 +28,12 @@ func NewTaskService(repo *repository.TaskRepo, c *cache.Cache, log zerolog.Logge
 	}
 }
 
+// GetTasksPage 分页获取任务
+func (s *TaskService) GetTasksPage(page, pageSize int) ([]model.Task, int64, error) {
+	s.log.Debug().Int("page", page).Int("pageSize", pageSize).Msg("SERVICE: 分页获取任务")
+	return s.repo.FindPage(page, pageSize)
+}
+
 // GetAllTasks 获取所有任务（带缓存穿透）
 func (s *TaskService) GetAllTasks() ([]model.Task, error) {
 	ctx := context.Background()

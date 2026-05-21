@@ -60,28 +60,57 @@ print_http() {
     echo -e "  ${DIM}→ HTTP $1${NC}"
 }
 
-# ════════════════════════════════════════════════════════════
-# 1. 任务 CRUD
-# ════════════════════════════════════════════════════════════
-print_section "1. 任务 CRUD"
+TOKEN_FILE="/tmp/enterprise_token.txt"
 
-# 先注册/登录获取 token
+# ════════════════════════════════════════════════════════════
+# 0. 认证检查
+# ════════════════════════════════════════════════════════════
+print_section "0. 认证检查"
+
+echo ""
+echo -e "  ${YELLOW}▸ 未认证访问（不带 Token）${NC}"
+print_curl_http "curl -s -o /dev/null -w \"%{http_code}\" $BASE_URL/api/tasks"
+HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$BASE_URL/api/tasks")
+print_http "$HTTP_CODE"
+if [ "$HTTP_CODE" = "401" ]; then
+    print_pass "未认证访问 (status=$HTTP_CODE)"
+else
+    print_fail "未认证访问" "期望 HTTP 401"
+fi
+
+echo ""
+echo -e "  ${YELLOW}▸ 无效 Token${NC}"
+print_curl_http "curl -s -o /dev/null -w \"%{http_code}\" $BASE_URL/api/tasks -H \"Authorization: Bearer invalid_token_here\""
+HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$BASE_URL/api/tasks" \
+    -H "Authorization: Bearer invalid_token_here")
+print_http "$HTTP_CODE"
+if [ "$HTTP_CODE" = "401" ]; then
+    print_pass "无效 Token (status=$HTTP_CODE)"
+else
+    print_fail "无效 Token" "期望 HTTP 401"
+fi
+
+# 从已保存的 Token 文件读取
 echo ""
 echo -e "  ${YELLOW}▸ 获取认证 Token${NC}"
-RESP=$(curl -s -X POST "$BASE_URL/api/auth/register" \
-    -H "Content-Type: application/json" \
-    -d '{"username":"tasktestuser","password":"test123456"}' 2>/dev/null)
-TOKEN=$(echo "$RESP" | python3 -c "import sys,json; print(json.load(sys.stdin)['data']['token'])" 2>/dev/null || echo "")
-if [ -z "$TOKEN" ]; then
-    # 尝试登录（如果已注册）
-    RESP=$(curl -s -X POST "$BASE_URL/api/auth/login" \
-        -H "Content-Type: application/json" \
-        -d '{"username":"tasktestuser","password":"test123456"}' 2>/dev/null)
-    TOKEN=$(echo "$RESP" | python3 -c "import sys,json; print(json.load(sys.stdin)['data']['token'])" 2>/dev/null || echo "")
+TOKEN=""
+if [ -f "$TOKEN_FILE" ]; then
+    SAVED_TOKEN=$(cat "$TOKEN_FILE")
+    SAVED_USER=$(echo "$SAVED_TOKEN" | cut -d'|' -f1)
+    SAVED_TOKEN_VAL=$(echo "$SAVED_TOKEN" | cut -d'|' -f2)
+    if [ -n "$SAVED_TOKEN_VAL" ]; then
+        TOKEN="$SAVED_TOKEN_VAL"
+        echo -e "  ${DIM}使用已保存的 Token（用户: $SAVED_USER）${NC}"
+    fi
 fi
 
 if [ -z "$TOKEN" ]; then
-    echo -e "  ${RED}无法获取 Token，请确保服务已启动${NC}"
+    echo ""
+    echo -e "  ${RED}✘ 未检测到已保存的 Token${NC}"
+    echo -e "  ${YELLOW}请先运行以下命令登录:${NC}"
+    echo -e "  ${DIM}  bash scripts/register.sh${NC}"
+    echo -e "  ${DIM}  选 2 登录，Token 会自动保存到 $TOKEN_FILE${NC}"
+    echo ""
     exit 1
 fi
 echo -e "  ${DIM}Token: ${TOKEN:0:20}...${NC}"

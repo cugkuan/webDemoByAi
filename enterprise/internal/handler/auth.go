@@ -80,6 +80,38 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	c.PureJSON(http.StatusOK, response.Success(result))
 }
 
+// Logout 退出登录
+func (h *AuthHandler) Logout(c *gin.Context) {
+	// 从 Authorization 头中提取 token
+	authHeader := c.GetHeader("Authorization")
+	if authHeader == "" {
+		c.PureJSON(http.StatusUnauthorized, apperrors.ErrMissingToken)
+		return
+	}
+
+	// 解析 Bearer Token
+	tokenString := ""
+	if len(authHeader) > 7 && authHeader[:7] == "Bearer " {
+		tokenString = authHeader[7:]
+	} else {
+		c.PureJSON(http.StatusUnauthorized, apperrors.ErrInvalidToken)
+		return
+	}
+
+	if err := h.svc.Logout(tokenString); err != nil {
+		if appErr, ok := err.(*apperrors.AppError); ok {
+			c.PureJSON(apperrors.HTTPStatus(appErr.Code), appErr)
+			return
+		}
+		c.Error(err)
+		return
+	}
+
+	c.PureJSON(http.StatusOK, response.Success(gin.H{
+		"message": "退出登录成功",
+	}))
+}
+
 // GetProfile 获取当前用户信息（需要认证）
 func (h *AuthHandler) GetProfile(c *gin.Context) {
 	userID, exists := c.Get("user_id")

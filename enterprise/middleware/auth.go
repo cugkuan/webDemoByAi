@@ -11,7 +11,7 @@ import (
 	"web-demo/enterprise/internal/service"
 )
 
-// AuthRequired JWT 认证中间件
+// AuthRequired JWT 认证中间件（验证签名 + Redis 白名单）
 func AuthRequired(userSvc *service.UserService, logger zerolog.Logger) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
@@ -32,7 +32,9 @@ func AuthRequired(userSvc *service.UserService, logger zerolog.Logger) gin.Handl
 		}
 
 		tokenString := parts[1]
-		userID, err := userSvc.ValidateToken(tokenString)
+
+		// 验证 JWT 签名 + Redis 白名单
+		userID, err := userSvc.ValidateTokenWithRedis(tokenString)
 		if err != nil {
 			logger.Warn().Str("path", c.Request.URL.Path).Err(err).Msg("Token 验证失败")
 			c.PureJSON(http.StatusUnauthorized, apperrors.ErrUnauthorized)

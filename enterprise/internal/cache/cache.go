@@ -140,8 +140,13 @@ func (c *Cache) DeleteL1(key string) {
 	}
 }
 
-// SetL2 设置 Redis 缓存
+// SetL2 设置 Redis 缓存（使用默认 L2 TTL）
 func (c *Cache) SetL2(ctx context.Context, key string, value interface{}) error {
+	return c.SetL2WithTTL(ctx, key, value, c.l2TTL)
+}
+
+// SetL2WithTTL 设置 Redis 缓存（使用自定义 TTL）
+func (c *Cache) SetL2WithTTL(ctx context.Context, key string, value interface{}, ttl time.Duration) error {
 	if c.redisClient == nil {
 		return nil
 	}
@@ -152,12 +157,12 @@ func (c *Cache) SetL2(ctx context.Context, key string, value interface{}) error 
 		return err
 	}
 
-	if err := c.redisClient.Set(ctx, key, data, c.l2TTL).Err(); err != nil {
+	if err := c.redisClient.Set(ctx, key, data, ttl).Err(); err != nil {
 		c.log.Error().Err(err).Msg("Redis SET 失败")
 		return err
 	}
 
-	c.log.Debug().Str("key", key).Dur("ttl", c.l2TTL).Msg("CACHE SET: L2")
+	c.log.Debug().Str("key", key).Dur("ttl", ttl).Msg("CACHE SET: L2")
 	return nil
 }
 

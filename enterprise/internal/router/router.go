@@ -54,7 +54,7 @@ func Setup(cfg *config.Config, db *gorm.DB, c *cache.Cache, log zerolog.Logger) 
 
 	// 用户相关依赖注入
 	userRepo := repository.NewUserRepo(db)
-	userSvc := service.NewUserService(userRepo, cfg, log)
+	userSvc := service.NewUserService(userRepo, cfg, c, log)
 	authH := handler.NewAuthHandler(userSvc, log)
 
 	// Swagger API 文档
@@ -80,6 +80,9 @@ func Setup(cfg *config.Config, db *gorm.DB, c *cache.Cache, log zerolog.Logger) 
 	protected := router.Group("/api")
 	protected.Use(middleware.AuthRequired(userSvc, log))
 	{
+		// 退出登录
+		protected.POST("/auth/logout", authH.Logout)
+
 		// 用户信息
 		protected.GET("/profile", authH.GetProfile)
 

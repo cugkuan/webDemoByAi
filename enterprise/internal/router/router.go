@@ -26,16 +26,17 @@ func Setup(cfg *config.Config, db *gorm.DB, c *cache.Cache, log zerolog.Logger) 
 	router := gin.New()
 
 	// 全局中间件
+
 	router.Use(gin.Recovery())
 	router.Use(middleware.RequestID())
 	router.Use(middleware.Logger(log))
 	router.Use(middleware.ErrorHandler(log))
 
-	// CORS 中间件
+	// CORS 中间件（允许 Authorization 头）
 	router.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"*"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "X-Request-ID"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "X-Request-ID", "Authorization"},
 		ExposeHeaders:    []string{"X-Request-ID"},
 		AllowCredentials: true,
 		MaxAge:           12 * time.Hour,
@@ -51,6 +52,11 @@ func Setup(cfg *config.Config, db *gorm.DB, c *cache.Cache, log zerolog.Logger) 
 	taskSvc := service.NewTaskService(taskRepo, c, log)
 	taskH := handler.NewTaskHandler(taskSvc, c, log)
 
+	// 用户相关依赖注入
+	userRepo := repository.NewUserRepo(db)
+	userSvc := service.NewUserService(userRepo, cfg, log)
+	authH := handler.NewAuthHandler(userSvc, log)
+
 	// Swagger API 文档
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 
@@ -59,26 +65,44 @@ func Setup(cfg *config.Config, db *gorm.DB, c *cache.Cache, log zerolog.Logger) 
 	router.GET("/health/liveness", livenessCheck)
 	router.GET("/health/readiness", readinessCheck(db))
 
-	// 任务相关路由
-	// 注意: 静态路由（/count）必须在参数路由（/:id）之前注册
-	taskGroup := router.Group("/api/tasks")
+	// ============================================================
+	// 认证路由（无需登录）
+	// ============================================================
+	authGroup := router.Group("/api/auth")
 	{
-		taskGroup.GET("", taskH.GetTasks)
-		taskGroup.GET("/count", taskH.CountTasks)
-		taskGroup.GET("/:id", taskH.GetTask)
-		taskGroup.POST("", taskH.CreateTask)
-		taskGroup.PUT("/:id", taskH.UpdateTask)
-		taskGroup.DELETE("/:id", taskH.DeleteTask)
+		authGroup.POST("/register", authH.Register)
+		authGroup.POST("/login", authH.Login)
 	}
 
-	// 缓存管理
-	cacheGroup := router.Group("/api/cache")
+	// ============================================================
+	// 需要认证的路由
+	// ============================================================
+	protected := router.Group("/api")
+	protected.Use(middleware.AuthRequired(userSvc, log))
 	{
-		cacheGroup.DELETE("", taskH.ClearAllCache)
-		cacheGroup.DELETE("/:id", taskH.ClearTaskCache)
+		// 用户信息
+		protected.GET("/profile", authH.GetProfile)
+
+		// 任务相关路由
+		taskGroup := protected.Group("/tasks")
+		{
+			taskGroup.GET("", taskH.GetTasks)
+			taskGroup.GET("/count", taskH.CountTasks)
+			taskGroup.GET("/:id", taskH.GetTask)
+			taskGroup.POST("", taskH.CreateTask)
+			taskGroup.PUT("/:id", taskH.UpdateTask)
+			taskGroup.DELETE("/:id", taskH.DeleteTask)
+		}
+
+		// 缓存管理
+		cacheGroup := protected.Group("/cache")
+		{
+			cacheGroup.DELETE("", taskH.ClearAllCache)
+			cacheGroup.DELETE("/:id", taskH.ClearTaskCache)
+		}
 	}
 
-	// 系统信息
+	// 系统信息（无需认证）
 	router.GET("/sys/info", sysInfo(c))
 	router.GET("/sys/stats", sysStats)
 
@@ -96,7 +120,7 @@ func healthCheck(db *gorm.DB, c *cache.Cache) gin.HandlerFunc {
 			"db":     checkDBHealth(db),
 			"redis":  checkRedisHealth(c),
 		}
-		ctx.JSON(http.StatusOK, gin.H{
+		ctx.PureJSON(http.StatusOK, gin.H{
 			"code":    200,
 			"message": "成功",
 			"data":    status,
@@ -105,20 +129,20 @@ func healthCheck(db *gorm.DB, c *cache.Cache) gin.HandlerFunc {
 }
 
 func livenessCheck(ctx *gin.Context) {
-	ctx.JSON(http.StatusOK, gin.H{"status": "alive"})
+	ctx.PureJSON(http.StatusOK, gin.H{"status": "alive"})
 }
 
 func readinessCheck(db *gorm.DB) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		dbStatus := checkDBHealth(db)
 		if dbStatus != "ok" {
-			ctx.JSON(http.StatusServiceUnavailable, gin.H{
+			ctx.PureJSON(http.StatusServiceUnavailable, gin.H{
 				"status": "not_ready",
 				"reason": "database " + dbStatus,
 			})
 			return
 		}
-		ctx.JSON(http.StatusOK, gin.H{"status": "ready"})
+		ctx.PureJSON(http.StatusOK, gin.H{"status": "ready"})
 	}
 }
 
@@ -136,7 +160,7 @@ func sysInfo(c *cache.Cache) gin.HandlerFunc {
 				"L2_TTL": c.L2TTL().String(),
 			},
 		}
-		ctx.JSON(http.StatusOK, gin.H{
+		ctx.PureJSON(http.StatusOK, gin.H{
 			"code":    200,
 			"message": "成功",
 			"data":    info,
@@ -154,7 +178,7 @@ func sysStats(ctx *gin.Context) {
 			"status": "已连接",
 		},
 	}
-	ctx.JSON(http.StatusOK, gin.H{
+	ctx.PureJSON(http.StatusOK, gin.H{
 		"code":    200,
 		"message": "成功",
 		"data":    stats,

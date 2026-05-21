@@ -22,12 +22,17 @@ func (e *AppError) Unwrap() error {
 
 // 预定义错误
 var (
-	ErrNotFound       = New(404, "资源不存在")
-	ErrBadRequest     = New(400, "无效的请求")
-	ErrInternalServer = New(500, "服务器内部错误")
-	ErrTitleRequired  = New(400, "标题不能为空")
-	ErrInvalidID      = New(400, "无效的任务 ID")
-	ErrRateLimited    = New(429, "请求过于频繁，请稍后再试")
+	ErrNotFound          = New(404, "资源不存在")
+	ErrBadRequest        = New(400, "无效的请求")
+	ErrInternalServer    = New(500, "服务器内部错误")
+	ErrTitleRequired     = New(400, "标题不能为空")
+	ErrInvalidID         = New(400, "无效的任务 ID")
+	ErrRateLimited       = New(429, "请求过于频繁，请稍后再试")
+	ErrUsernameExists    = New(409, "用户名已存在")
+	ErrInvalidCredentials = New(401, "用户名或密码错误")
+	ErrUnauthorized      = New(401, "未授权，请先登录")
+	ErrMissingToken      = New(401, "缺少认证令牌")
+	ErrInvalidToken      = New(401, "无效的认证令牌")
 )
 
 // New 创建应用错误

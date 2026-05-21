@@ -6,7 +6,7 @@ server:
   mode: debug
 
 database:
-  dsn: "root@tcp(127.0.0.1:3306)/task_db?charset=utf8mb4&parseTime=True&loc=Local"
+  dsn: "root:root123@tcp(127.0.0.1:3307)/task_db?charset=utf8mb4&parseTime=True&loc=Local"
   max_open_conns: 25
   max_idle_conns: 10
   conn_max_lifetime: 5m
@@ -31,3 +31,8 @@ rate:
   enabled: true
   requests: 100
   per_sec: 1.0
+
+jwt:
+  secret: "enterprise-secret-key-2024"
+  expire_time: 24h
+  issuer: "enterprise-api"

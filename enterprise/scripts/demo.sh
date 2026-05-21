@@ -1,25 +1,61 @@
-c'l#!/bin/bash
+#!/bin/bash
+# ============================================================
+# 缓存演示脚本（需要 JWT 认证）
+# 演示 2 级缓存（L1 本地内存 + L2 Redis）的工作流程
+# 用法: bash scripts/demo.sh [base_url]
+# 默认: http://localhost:8080
+# ============================================================
 
-# 缓存演示脚本
-echo "========================================"
-echo "2级缓存演示脚本"
-echo "========================================"
-echo ""
+BASE_URL="${1:-http://localhost:8080}"
 
-# 颜色定义
+# ── 颜色 ──
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 CYAN='\033[0;36m'
-NC='\033[0m' # No Color
+NC='\033[0m'
+BOLD='\033[1m'
+DIM='\033[2m'
 
-# 测试基础地址
-BASE_URL="http://localhost:8080"
+# ── 辅助函数 ──
+print_json() {
+    echo "$1" | python3 -m json.tool 2>/dev/null | sed 's/^/  /'
+}
 
-# 检查服务是否运行
+# ── 获取认证 Token ──
+get_token() {
+    local username="demouser_$(date +%s)"
+    local password="demo123456"
+
+    # 先尝试注册
+    local resp=$(curl -s -X POST "$BASE_URL/api/auth/register" \
+        -H "Content-Type: application/json" \
+        -d "{\"username\":\"$username\",\"password\":\"$password\"}")
+    local token=$(echo "$resp" | python3 -c "import sys,json; print(json.load(sys.stdin)['data']['token'])" 2>/dev/null)
+
+    if [ -z "$token" ]; then
+        # 如果注册失败（可能已存在），尝试登录
+        resp=$(curl -s -X POST "$BASE_URL/api/auth/login" \
+            -H "Content-Type: application/json" \
+            -d "{\"username\":\"$username\",\"password\":\"$password\"}")
+        token=$(echo "$resp" | python3 -c "import sys,json; print(json.load(sys.stdin)['data']['token'])" 2>/dev/null)
+    fi
+
+    if [ -z "$token" ]; then
+        # 最后尝试用默认测试账号登录
+        resp=$(curl -s -X POST "$BASE_URL/api/auth/login" \
+            -H "Content-Type: application/json" \
+            -d '{"username":"testuser","password":"test123456"}')
+        token=$(echo "$resp" | python3 -c "import sys,json; print(json.load(sys.stdin)['data']['token'])" 2>/dev/null)
+    fi
+
+    echo "$token"
+}
+
+# ── 检查服务 ──
 echo -e "${CYAN}检查服务状态...${NC}"
-if ! curl -s "$BASE_URL/api/tasks" > /dev/null 2>&1; then
+if ! curl -s "$BASE_URL/health" > /dev/null 2>&1; then
     echo -e "${RED}❌ 错误：服务未运行，请先启动应用${NC}"
     echo "启动方法: cd /Users/kuan/Downloads/web-demo/enterprise && docker compose up -d"
     exit 1
@@ -27,37 +63,60 @@ fi
 echo -e "${GREEN}✓ 服务已运行${NC}"
 echo ""
 
+# ── 获取 Token ──
+echo -e "${CYAN}获取认证 Token...${NC}"
+TOKEN=$(get_token)
+if [ -z "$TOKEN" ]; then
+    echo -e "${RED}❌ 无法获取 Token，请确保服务已启动${NC}"
+    exit 1
+fi
+echo -e "${GREEN}✓ Token 获取成功${NC}"
+echo ""
+
+# ── 演示开始 ──
+echo "========================================"
+echo "2级缓存演示脚本"
+echo "========================================"
+echo ""
+
 echo -e "${YELLOW}1. 创建任务...${NC}"
 curl -s -X POST "$BASE_URL/api/tasks" \
+  -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"title":"缓存测试任务","done":false}' | jq '.'
 echo ""
 
 echo -e "${YELLOW}2. 获取单个任务（查询数据库 + L1/L2 缓存写入）${NC}"
-time curl -s -X GET "$BASE_URL/api/tasks/1" | jq '.'
+time curl -s -X GET "$BASE_URL/api/tasks/1" \
+  -H "Authorization: Bearer $TOKEN" | jq '.'
 echo ""
 
 echo -e "${YELLOW}3. 等待 1 秒后再次获取单个任务（L1 缓存命中）${NC}"
 sleep 1
-time curl -s -X GET "$BASE_URL/api/tasks/1" | jq '.'
+time curl -s -X GET "$BASE_URL/api/tasks/1" \
+  -H "Authorization: Bearer $TOKEN" | jq '.'
 echo ""
 
 echo -e "${YELLOW}4. 获取单个任务（查询数据库 + L1/L2 缓存写入）${NC}"
-time curl -s -X GET "$BASE_URL/api/tasks/1" | jq '.'
+time curl -s -X GET "$BASE_URL/api/tasks/1" \
+  -H "Authorization: Bearer $TOKEN" | jq '.'
 echo ""
 
 echo -e "${YELLOW}5. 立即再次获取单个任务（L1 缓存命中）${NC}"
-time curl -s -X GET "$BASE_URL/api/tasks/1" | jq '.'
+time curl -s -X GET "$BASE_URL/api/tasks/1" \
+  -H "Authorization: Bearer $TOKEN" | jq '.'
 echo ""
 
 echo -e "${YELLOW}6. 更新任务（清除缓存）${NC}"
 curl -s -X PUT "$BASE_URL/api/tasks/1" \
+  -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"title":"缓存测试任务(已更新)","done":true}' | jq '.'
 echo ""
 
 echo -e "${YELLOW}7. 获取已更新的任务（缓存已被清除，重新查询数据库）${NC}"
-time curl -s -X GET "$BASE_URL/api/tasks/1" | jq '.'
+time curl -s -X GET "$BASE_URL/api/tasks/1" \
+  -H "Authorization: Bearer $TOKEN" | jq '.'
 echo ""
 
 # ============================================================
@@ -83,16 +142,16 @@ run_load_test() {
     echo "  并发数: $num_concurrent | 总请求: $num_requests"
     
     local start_time=$(date +%s%N)
-    local success=0
-    local failed=0
     
     # 使用并发 curl 请求
     for ((i = 1; i <= num_requests; i++)); do
         (
             if [ "$method" = "GET" ]; then
-                curl -s "$endpoint" > /dev/null 2>&1
+                curl -s "$endpoint" \
+                    -H "Authorization: Bearer $TOKEN" > /dev/null 2>&1
             elif [ "$method" = "POST" ]; then
                 curl -s -X POST "$endpoint" \
+                    -H "Authorization: Bearer $TOKEN" \
                     -H "Content-Type: application/json" \
                     -d "$data" > /dev/null 2>&1
             fi
@@ -121,6 +180,7 @@ echo ""
 
 # 清除缓存：更新一个任务来清除所有缓存
 curl -s -X PUT "$BASE_URL/api/tasks/1" \
+    -H "Authorization: Bearer $TOKEN" \
     -H "Content-Type: application/json" \
     -d '{"title":"test","done":false}' > /dev/null
 
@@ -153,7 +213,8 @@ local start_time=$(date +%s%N)
 
 # 并发读
 for ((i = 1; i <= 500; i++)); do
-    curl -s "$BASE_URL/api/tasks" > /dev/null 2>&1 &
+    curl -s "$BASE_URL/api/tasks" \
+        -H "Authorization: Bearer $TOKEN" > /dev/null 2>&1 &
     if (( i % 50 == 0 )); then
         wait
     fi
@@ -179,7 +240,8 @@ local start_time=$(date +%s%N)
 local pids=()
 
 for ((i = 1; i <= 5000; i++)); do
-    curl -s "$BASE_URL/api/tasks/1" > /dev/null 2>&1 &
+    curl -s "$BASE_URL/api/tasks/1" \
+        -H "Authorization: Bearer $TOKEN" > /dev/null 2>&1 &
     pids+=($!)
     
     # 每 200 个请求打印进度

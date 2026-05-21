@@ -86,7 +86,7 @@ func RateLimit(rate float64, burst int) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ip := c.ClientIP()
 		if !limiter.Allow(ip) {
-			c.JSON(http.StatusTooManyRequests, apperrors.ErrRateLimited)
+			c.PureJSON(http.StatusTooManyRequests, apperrors.ErrRateLimited)
 			c.Abort()
 			return
 		}

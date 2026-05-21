@@ -106,6 +106,11 @@ func TestPredefinedErrors(t *testing.T) {
 		{"ErrTitleRequired", ErrTitleRequired, "标题不能为空", 400},
 		{"ErrInvalidID", ErrInvalidID, "无效的任务 ID", 400},
 		{"ErrRateLimited", ErrRateLimited, "请求过于频繁，请稍后再试", 429},
+		{"ErrUsernameExists", ErrUsernameExists, "用户名已存在", 409},
+		{"ErrInvalidCredentials", ErrInvalidCredentials, "用户名或密码错误", 401},
+		{"ErrUnauthorized", ErrUnauthorized, "未授权，请先登录", 401},
+		{"ErrMissingToken", ErrMissingToken, "缺少认证令牌", 401},
+		{"ErrInvalidToken", ErrInvalidToken, "无效的认证令牌", 401},
 	}
 
 	for _, tt := range tests {

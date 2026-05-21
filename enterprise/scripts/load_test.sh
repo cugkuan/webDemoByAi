@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# 高级压力测试脚本
+# 高级压力测试脚本（需要 JWT 认证）
 # 用于测试缓存系统和 HTTP 超时配置的性能
 
 set -e
@@ -14,12 +14,42 @@ CYAN='\033[0;36m'
 MAGENTA='\033[0;35m'
 NC='\033[0m'
 
-BASE_URL="http://localhost:8080"
+BASE_URL="${1:-http://localhost:8080}"
 RESULTS_FILE="/tmp/load_test_results.txt"
+
+# ── 获取认证 Token ──
+get_token() {
+    local username="loadtestuser_$(date +%s)"
+    local password="loadtest123"
+
+    # 先尝试注册
+    local resp=$(curl -s -X POST "$BASE_URL/api/auth/register" \
+        -H "Content-Type: application/json" \
+        -d "{\"username\":\"$username\",\"password\":\"$password\"}")
+    local token=$(echo "$resp" | python3 -c "import sys,json; print(json.load(sys.stdin)['data']['token'])" 2>/dev/null)
+
+    if [ -z "$token" ]; then
+        # 如果注册失败，尝试登录
+        resp=$(curl -s -X POST "$BASE_URL/api/auth/login" \
+            -H "Content-Type: application/json" \
+            -d "{\"username\":\"$username\",\"password\":\"$password\"}")
+        token=$(echo "$resp" | python3 -c "import sys,json; print(json.load(sys.stdin)['data']['token'])" 2>/dev/null)
+    fi
+
+    if [ -z "$token" ]; then
+        # 最后尝试用默认测试账号登录
+        resp=$(curl -s -X POST "$BASE_URL/api/auth/login" \
+            -H "Content-Type: application/json" \
+            -d '{"username":"testuser","password":"test123456"}')
+        token=$(echo "$resp" | python3 -c "import sys,json; print(json.load(sys.stdin)['data']['token'])" 2>/dev/null)
+    fi
+
+    echo "$token"
+}
 
 # 检查服务
 check_service() {
-    if ! curl -s "$BASE_URL/api/tasks" > /dev/null 2>&1; then
+    if ! curl -s "$BASE_URL/health" > /dev/null 2>&1; then
         echo -e "${RED}❌ 服务未运行${NC}"
         exit 1
     fi
@@ -53,9 +83,11 @@ run_test() {
             local t1=$(date +%s%N)
             
             if [ "$method" = "GET" ]; then
-                curl -s "$endpoint" > /dev/null 2>&1 && echo "ok" || echo "fail"
+                curl -s "$endpoint" \
+                    -H "Authorization: Bearer $TOKEN" > /dev/null 2>&1 && echo "ok" || echo "fail"
             else
                 curl -s -X "$method" "$endpoint" \
+                    -H "Authorization: Bearer $TOKEN" \
                     -H "Content-Type: application/json" \
                     -d '{"title":"test","done":false}' > /dev/null 2>&1 && echo "ok" || echo "fail"
             fi
@@ -110,13 +142,24 @@ main() {
     echo -e "${GREEN}✓ 服务已连接${NC}"
     echo ""
     
+    # 获取 Token
+    echo -e "${CYAN}获取认证 Token...${NC}"
+    TOKEN=$(get_token)
+    if [ -z "$TOKEN" ]; then
+        echo -e "${RED}❌ 无法获取 Token${NC}"
+        exit 1
+    fi
+    echo -e "${GREEN}✓ Token 获取成功${NC}"
+    echo ""
+    
     # 清空结果文件
     > "$RESULTS_FILE"
     
     # 预热
     echo -e "${CYAN}预热系统...${NC}"
     for ((i=0; i<10; i++)); do
-        curl -s "$BASE_URL/api/tasks" > /dev/null 2>&1 &
+        curl -s "$BASE_URL/api/tasks" \
+            -H "Authorization: Bearer $TOKEN" > /dev/null 2>&1 &
     done
     wait
     echo -e "${GREEN}✓ 预热完成${NC}"

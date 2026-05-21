@@ -54,7 +54,10 @@ func main() {
 	// 自动迁移
 	log.Info().Msg("执行数据库迁移...")
 	if err := repository.NewTaskRepo(db).AutoMigrate(); err != nil {
-		log.Fatal().Err(err).Msg("数据库迁移失败")
+		log.Fatal().Err(err).Msg("任务表迁移失败")
+	}
+	if err := repository.NewUserRepo(db).AutoMigrate(); err != nil {
+		log.Fatal().Err(err).Msg("用户表迁移失败")
 	}
 
 	// 初始化示例数据
@@ -129,6 +132,13 @@ func printBanner(port int) {
 	fmt.Println("  GET    /health           - 健康检查")
 	fmt.Println("  GET    /health/liveness  - 存活检查")
 	fmt.Println("  GET    /health/readiness - 就绪检查")
+	fmt.Println("")
+	fmt.Println("🔐 认证:")
+	fmt.Println("  POST   /api/auth/register - 用户注册")
+	fmt.Println("  POST   /api/auth/login    - 用户登录")
+	fmt.Println("  GET    /api/profile       - 获取用户信息（需认证）")
+	fmt.Println("")
+	fmt.Println("📋 任务管理（需认证）:")
 	fmt.Println("  GET    /api/tasks        - 获取所有任务")
 	fmt.Println("  GET    /api/tasks/count  - 统计任务总数")
 	fmt.Println("  GET    /api/tasks/{id}   - 获取单个任务")
@@ -136,7 +146,7 @@ func printBanner(port int) {
 	fmt.Println("  PUT    /api/tasks/{id}   - 更新任务")
 	fmt.Println("  DELETE /api/tasks/{id}   - 删除任务")
 	fmt.Println("")
-	fmt.Println("🧹 缓存管理:")
+	fmt.Println("🧹 缓存管理（需认证）:")
 	fmt.Println("  DELETE /api/cache        - 清除所有缓存")
 	fmt.Println("  DELETE /api/cache/{id}   - 清除任务缓存")
 	fmt.Println("")

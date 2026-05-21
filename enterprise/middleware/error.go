@@ -28,11 +28,11 @@ func ErrorHandler(logger zerolog.Logger) gin.HandlerFunc {
 					Int("code", e.Code).
 					Str("error", e.Error()).
 					Msg("application error")
-				c.JSON(apperrors.HTTPStatus(e.Code), e)
+				c.PureJSON(apperrors.HTTPStatus(e.Code), e)
 			default:
 				// 处理 GORM 错误
 				if err == gorm.ErrRecordNotFound {
-					c.JSON(http.StatusNotFound, apperrors.ErrNotFound)
+					c.PureJSON(http.StatusNotFound, apperrors.ErrNotFound)
 					return
 				}
 
@@ -41,7 +41,7 @@ func ErrorHandler(logger zerolog.Logger) gin.HandlerFunc {
 					Str("path", c.Request.URL.Path).
 					Str("error", err.Error()).
 					Msg("internal server error")
-				c.JSON(http.StatusInternalServerError, apperrors.ErrInternalServer)
+				c.PureJSON(http.StatusInternalServerError, apperrors.ErrInternalServer)
 			}
 
 			// 阻止后续 handler 继续写入

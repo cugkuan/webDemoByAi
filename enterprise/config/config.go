@@ -17,6 +17,7 @@ type Config struct {
 	Cache    CacheConfig    `yaml:"cache"`
 	Log      LogConfig      `yaml:"log"`
 	Rate     RateConfig     `yaml:"rate"`
+	JWT      JWTConfig      `yaml:"jwt"`
 }
 
 // ServerConfig 服务器配置
@@ -63,6 +64,13 @@ type RateConfig struct {
 	PerSec   float64 `yaml:"per_sec"`
 }
 
+// JWTConfig JWT 配置
+type JWTConfig struct {
+	Secret     string        `yaml:"secret"`
+	ExpireTime time.Duration `yaml:"expire_time"`
+	Issuer     string        `yaml:"issuer"`
+}
+
 // DefaultConfig 返回默认配置
 func DefaultConfig() *Config {
 	return &Config{
@@ -95,6 +103,11 @@ func DefaultConfig() *Config {
 			Enabled:  true,
 			Requests: 100,
 			PerSec:   1.0,
+		},
+		JWT: JWTConfig{
+			Secret:     "enterprise-secret-key-2024",
+			ExpireTime: 24 * time.Hour,
+			Issuer:     "enterprise-api",
 		},
 	}
 }
@@ -136,6 +149,12 @@ func Load(path string) (*Config, error) {
 	}
 	if v := os.Getenv("GIN_MODE"); v != "" {
 		cfg.Server.Mode = v
+	}
+	if v := os.Getenv("JWT_SECRET"); v != "" {
+		cfg.JWT.Secret = v
+	}
+	if v := os.Getenv("JWT_EXPIRE_TIME"); v != "" {
+		cfg.JWT.ExpireTime, _ = time.ParseDuration(v)
 	}
 
 	return cfg, nil

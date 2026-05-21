@@ -96,150 +96,112 @@ else
 fi
 
 # ════════════════════════════════════════════════════════════
-# 2. 任务 CRUD
+# 2. 认证测试
 # ════════════════════════════════════════════════════════════
-print_section "2. 任务 CRUD"
+print_section "2. 认证测试"
 
 echo ""
-echo -e "  ${YELLOW}▸ 创建任务${NC}"
-print_curl "curl -s -X POST $BASE_URL/api/tasks -H \"Content-Type: application/json\" -d '{\"title\":\"API测试任务\",\"done\":false}'"
-RESP=$(curl -s -X POST "$BASE_URL/api/tasks" \
+echo -e "  ${YELLOW}▸ 用户注册${NC}"
+print_curl "curl -s -X POST $BASE_URL/api/auth/register -H \"Content-Type: application/json\" -d '{\"username\":\"testuser\",\"password\":\"test123456\"}'"
+RESP=$(curl -s -X POST "$BASE_URL/api/auth/register" \
     -H "Content-Type: application/json" \
-    -d '{"title":"API测试任务","done":false}')
+    -d '{"username":"testuser","password":"test123456"}')
 print_json "$RESP"
-TASK_ID=$(echo "$RESP" | python3 -c "import sys,json; print(json.load(sys.stdin)['data']['id'])" 2>/dev/null || echo "")
-if [ -n "$TASK_ID" ] && [ "$TASK_ID" -gt 0 ] 2>/dev/null; then
-    print_pass "创建任务 (id=$TASK_ID)"
+TOKEN=$(echo "$RESP" | python3 -c "import sys,json; print(json.load(sys.stdin)['data']['token'])" 2>/dev/null || echo "")
+USERNAME=$(echo "$RESP" | python3 -c "import sys,json; print(json.load(sys.stdin)['data']['user']['username'])" 2>/dev/null || echo "")
+if [ -n "$TOKEN" ] && [ "$USERNAME" = "testuser" ]; then
+    print_pass "用户注册 (username=$USERNAME)"
 else
-    print_fail "创建任务" "期望 data.id > 0"
+    print_fail "用户注册" "期望 data.token 和 data.user.username"
 fi
 
-# 获取所有任务已移除（数据量过大时影响性能）
+echo ""
+echo -e "  ${YELLOW}▸ 重复注册${NC}"
+print_curl_http "curl -s -o /dev/null -w \"%{http_code}\" -X POST $BASE_URL/api/auth/register -H \"Content-Type: application/json\" -d '{\"username\":\"testuser\",\"password\":\"test123456\"}'"
+HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$BASE_URL/api/auth/register" \
+    -H "Content-Type: application/json" \
+    -d '{"username":"testuser","password":"test123456"}')
+print_http "$HTTP_CODE"
+if [ "$HTTP_CODE" = "409" ]; then
+    print_pass "重复注册 (status=$HTTP_CODE)"
+else
+    print_fail "重复注册" "期望 HTTP 409"
+fi
 
 echo ""
-echo -e "  ${YELLOW}▸ 获取单个任务${NC}"
-print_curl "curl -s $BASE_URL/api/tasks/$TASK_ID"
-RESP=$(curl -s "$BASE_URL/api/tasks/$TASK_ID")
+echo -e "  ${YELLOW}▸ 用户登录${NC}"
+print_curl "curl -s -X POST $BASE_URL/api/auth/login -H \"Content-Type: application/json\" -d '{\"username\":\"testuser\",\"password\":\"test123456\"}'"
+RESP=$(curl -s -X POST "$BASE_URL/api/auth/login" \
+    -H "Content-Type: application/json" \
+    -d '{"username":"testuser","password":"test123456"}')
 print_json "$RESP"
-TASK_TITLE=$(echo "$RESP" | python3 -c "import sys,json; print(json.load(sys.stdin)['data']['title'])" 2>/dev/null || echo "")
-if [ "$TASK_TITLE" = "API测试任务" ]; then
-    print_pass "获取单个任务 (title=$TASK_TITLE)"
+TOKEN=$(echo "$RESP" | python3 -c "import sys,json; print(json.load(sys.stdin)['data']['token'])" 2>/dev/null || echo "")
+if [ -n "$TOKEN" ]; then
+    print_pass "用户登录 (token=${TOKEN:0:20}...)"
 else
-    print_fail "获取单个任务" "期望 title='API测试任务'"
+    print_fail "用户登录" "期望 data.token"
 fi
 
 echo ""
-echo -e "  ${YELLOW}▸ 更新任务${NC}"
-print_curl "curl -s -X PUT $BASE_URL/api/tasks/$TASK_ID -H \"Content-Type: application/json\" -d '{\"title\":\"已更新任务\",\"done\":true}'"
-RESP=$(curl -s -X PUT "$BASE_URL/api/tasks/$TASK_ID" \
+echo -e "  ${YELLOW}▸ 登录失败（错误密码）${NC}"
+print_curl_http "curl -s -o /dev/null -w \"%{http_code}\" -X POST $BASE_URL/api/auth/login -H \"Content-Type: application/json\" -d '{\"username\":\"testuser\",\"password\":\"wrongpassword\"}'"
+HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$BASE_URL/api/auth/login" \
     -H "Content-Type: application/json" \
-    -d '{"title":"已更新任务","done":true}')
+    -d '{"username":"testuser","password":"wrongpassword"}')
+print_http "$HTTP_CODE"
+if [ "$HTTP_CODE" = "401" ]; then
+    print_pass "登录失败 (status=$HTTP_CODE)"
+else
+    print_fail "登录失败" "期望 HTTP 401"
+fi
+
+echo ""
+echo -e "  ${YELLOW}▸ 获取用户信息（需认证）${NC}"
+print_curl "curl -s $BASE_URL/api/profile -H \"Authorization: Bearer $TOKEN\""
+RESP=$(curl -s "$BASE_URL/api/profile" \
+    -H "Authorization: Bearer $TOKEN")
 print_json "$RESP"
-UPDATED_TITLE=$(echo "$RESP" | python3 -c "import sys,json; print(json.load(sys.stdin)['data']['title'])" 2>/dev/null || echo "")
-UPDATED_DONE=$(echo "$RESP" | python3 -c "import sys,json; print(json.load(sys.stdin)['data']['done'])" 2>/dev/null || echo "")
-if [ "$UPDATED_TITLE" = "已更新任务" ] && [ "$UPDATED_DONE" = "True" ]; then
-    print_pass "更新任务 (title=$UPDATED_TITLE, done=$UPDATED_DONE)"
+PROFILE_USERNAME=$(echo "$RESP" | python3 -c "import sys,json; print(json.load(sys.stdin)['data']['username'])" 2>/dev/null || echo "")
+if [ "$PROFILE_USERNAME" = "testuser" ]; then
+    print_pass "获取用户信息 (username=$PROFILE_USERNAME)"
 else
-    print_fail "更新任务" "期望 title='已更新任务', done=true"
+    print_fail "获取用户信息" "期望 data.username='testuser'"
 fi
 
 echo ""
-echo -e "  ${YELLOW}▸ 删除任务${NC}"
-print_curl_http "curl -s -o /dev/null -w \"%{http_code}\" -X DELETE $BASE_URL/api/tasks/$TASK_ID"
-HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X DELETE "$BASE_URL/api/tasks/$TASK_ID")
+echo -e "  ${YELLOW}▸ 未认证访问${NC}"
+print_curl_http "curl -s -o /dev/null -w \"%{http_code}\" $BASE_URL/api/profile"
+HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$BASE_URL/api/profile")
 print_http "$HTTP_CODE"
-if [ "$HTTP_CODE" = "200" ]; then
-    print_pass "删除任务 (status=$HTTP_CODE)"
+if [ "$HTTP_CODE" = "401" ]; then
+    print_pass "未认证访问 (status=$HTTP_CODE)"
 else
-    print_fail "删除任务" "期望 HTTP 200"
+    print_fail "未认证访问" "期望 HTTP 401"
+fi
+
+echo ""
+echo -e "  ${YELLOW}▸ 无效 Token${NC}"
+print_curl_http "curl -s -o /dev/null -w \"%{http_code}\" $BASE_URL/api/profile -H \"Authorization: Bearer invalid_token_here\""
+HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$BASE_URL/api/profile" \
+    -H "Authorization: Bearer invalid_token_here")
+print_http "$HTTP_CODE"
+if [ "$HTTP_CODE" = "401" ]; then
+    print_pass "无效 Token (status=$HTTP_CODE)"
+else
+    print_fail "无效 Token" "期望 HTTP 401"
 fi
 
 # ════════════════════════════════════════════════════════════
-# 3. 边界情况测试
+# 3. 缓存管理
 # ════════════════════════════════════════════════════════════
-print_section "3. 边界情况测试"
-
-echo ""
-echo -e "  ${YELLOW}▸ 获取不存在的任务${NC}"
-print_curl_http "curl -s -o /dev/null -w \"%{http_code}\" $BASE_URL/api/tasks/99999"
-HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$BASE_URL/api/tasks/99999")
-print_http "$HTTP_CODE"
-if [ "$HTTP_CODE" = "404" ]; then
-    print_pass "获取不存在的任务 (status=$HTTP_CODE)"
-else
-    print_fail "获取不存在的任务" "期望 HTTP 404"
-fi
-
-echo ""
-echo -e "  ${YELLOW}▸ 更新不存在的任务${NC}"
-print_curl_http "curl -s -o /dev/null -w \"%{http_code}\" -X PUT $BASE_URL/api/tasks/99999 -H \"Content-Type: application/json\" -d '{\"title\":\"test\",\"done\":false}'"
-HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X PUT "$BASE_URL/api/tasks/99999" \
-    -H "Content-Type: application/json" \
-    -d '{"title":"test","done":false}')
-print_http "$HTTP_CODE"
-if [ "$HTTP_CODE" = "404" ]; then
-    print_pass "更新不存在的任务 (status=$HTTP_CODE)"
-else
-    print_fail "更新不存在的任务" "期望 HTTP 404"
-fi
-
-echo ""
-echo -e "  ${YELLOW}▸ 删除不存在的任务${NC}"
-print_curl_http "curl -s -o /dev/null -w \"%{http_code}\" -X DELETE $BASE_URL/api/tasks/99999"
-HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X DELETE "$BASE_URL/api/tasks/99999")
-print_http "$HTTP_CODE"
-if [ "$HTTP_CODE" = "404" ]; then
-    print_pass "删除不存在的任务 (status=$HTTP_CODE)"
-else
-    print_fail "删除不存在的任务" "期望 HTTP 404"
-fi
-
-echo ""
-echo -e "  ${YELLOW}▸ 无效 ID（非数字）${NC}"
-print_curl_http "curl -s -o /dev/null -w \"%{http_code}\" $BASE_URL/api/tasks/abc"
-HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$BASE_URL/api/tasks/abc")
-print_http "$HTTP_CODE"
-if [ "$HTTP_CODE" = "400" ]; then
-    print_pass "无效 ID (status=$HTTP_CODE)"
-else
-    print_fail "无效 ID" "期望 HTTP 400"
-fi
-
-echo ""
-echo -e "  ${YELLOW}▸ 空标题${NC}"
-print_curl_http "curl -s -o /dev/null -w \"%{http_code}\" -X POST $BASE_URL/api/tasks -H \"Content-Type: application/json\" -d '{\"title\":\"\",\"done\":false}'"
-HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$BASE_URL/api/tasks" \
-    -H "Content-Type: application/json" \
-    -d '{"title":"","done":false}')
-print_http "$HTTP_CODE"
-if [ "$HTTP_CODE" = "400" ]; then
-    print_pass "空标题 (status=$HTTP_CODE)"
-else
-    print_fail "空标题" "期望 HTTP 400"
-fi
-
-echo ""
-echo -e "  ${YELLOW}▸ 无效 JSON${NC}"
-print_curl_http "curl -s -o /dev/null -w \"%{http_code}\" -X POST $BASE_URL/api/tasks -H \"Content-Type: application/json\" -d 'not json'"
-HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$BASE_URL/api/tasks" \
-    -H "Content-Type: application/json" \
-    -d 'not json')
-print_http "$HTTP_CODE"
-if [ "$HTTP_CODE" = "400" ]; then
-    print_pass "无效 JSON (status=$HTTP_CODE)"
-else
-    print_fail "无效 JSON" "期望 HTTP 400"
-fi
-
-# ════════════════════════════════════════════════════════════
-# 4. 缓存管理
-# ════════════════════════════════════════════════════════════
-print_section "4. 缓存管理"
+print_section "3. 缓存管理"
 
 echo ""
 echo -e "  ${YELLOW}▸ 清除所有缓存${NC}"
-print_curl_http "curl -s -o /dev/null -w \"%{http_code}\" -X DELETE $BASE_URL/api/cache"
-HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X DELETE "$BASE_URL/api/cache")
+
+print_curl_http "curl -s -o /dev/null -w \"%{http_code}\" -X DELETE $BASE_URL/api/cache -H \"Authorization: Bearer $TOKEN\""
+HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X DELETE "$BASE_URL/api/cache" \
+    -H "Authorization: Bearer $TOKEN")
 print_http "$HTTP_CODE"
 if [ "$HTTP_CODE" = "200" ]; then
     print_pass "清除所有缓存 (status=$HTTP_CODE)"
@@ -249,8 +211,9 @@ fi
 
 echo ""
 echo -e "  ${YELLOW}▸ 清除任务缓存${NC}"
-print_curl_http "curl -s -o /dev/null -w \"%{http_code}\" -X DELETE $BASE_URL/api/cache/1"
-HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X DELETE "$BASE_URL/api/cache/1")
+print_curl_http "curl -s -o /dev/null -w \"%{http_code}\" -X DELETE $BASE_URL/api/cache/1 -H \"Authorization: Bearer $TOKEN\""
+HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X DELETE "$BASE_URL/api/cache/1" \
+    -H "Authorization: Bearer $TOKEN")
 print_http "$HTTP_CODE"
 if [ "$HTTP_CODE" = "200" ]; then
     print_pass "清除任务缓存 (status=$HTTP_CODE)"
@@ -260,8 +223,9 @@ fi
 
 echo ""
 echo -e "  ${YELLOW}▸ 清除缓存无效 ID${NC}"
-print_curl_http "curl -s -o /dev/null -w \"%{http_code}\" -X DELETE $BASE_URL/api/cache/abc"
-HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X DELETE "$BASE_URL/api/cache/abc")
+print_curl_http "curl -s -o /dev/null -w \"%{http_code}\" -X DELETE $BASE_URL/api/cache/abc -H \"Authorization: Bearer $TOKEN\""
+HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X DELETE "$BASE_URL/api/cache/abc" \
+    -H "Authorization: Bearer $TOKEN")
 print_http "$HTTP_CODE"
 if [ "$HTTP_CODE" = "400" ]; then
     print_pass "清除缓存无效ID (status=$HTTP_CODE)"
@@ -270,12 +234,13 @@ else
 fi
 
 # ════════════════════════════════════════════════════════════
-# 5. 系统信息
+# 4. 系统信息
 # ════════════════════════════════════════════════════════════
-print_section "5. 系统信息"
+print_section "4. 系统信息"
 
 echo ""
 echo -e "  ${YELLOW}▸ 系统信息${NC}"
+
 print_curl "curl -s $BASE_URL/sys/info"
 RESP=$(curl -s "$BASE_URL/sys/info")
 print_json "$RESP"
@@ -297,62 +262,13 @@ else
 fi
 
 # ════════════════════════════════════════════════════════════
-# 6. 缓存穿透测试
+# 5. Swagger 文档
 # ════════════════════════════════════════════════════════════
-print_section "6. 缓存穿透测试"
-
-echo ""
-echo -e "  ${YELLOW}▸ 创建测试任务${NC}"
-RESP=$(curl -s -X POST "$BASE_URL/api/tasks" \
-    -H "Content-Type: application/json" \
-    -d '{"title":"缓存测试","done":false}')
-CACHE_TASK_ID=$(echo "$RESP" | python3 -c "import sys,json; print(json.load(sys.stdin)['data']['id'])" 2>/dev/null || echo "")
-echo -e "  ${DIM}任务 ID: $CACHE_TASK_ID${NC}"
-
-echo ""
-echo -e "  ${YELLOW}▸ 第一次请求（查数据库）${NC}"
-print_curl "curl -s $BASE_URL/api/tasks/$CACHE_TASK_ID"
-START=$(python3 -c "import time; print(int(time.time()*1000))")
-RESP=$(curl -s "$BASE_URL/api/tasks/$CACHE_TASK_ID")
-END=$(python3 -c "import time; print(int(time.time()*1000))")
-print_json "$RESP"
-echo -e "  ${DIM}⏱ 耗时: $((END-START))ms${NC}"
-
-echo ""
-echo -e "  ${YELLOW}▸ 第二次请求（L1 缓存命中）${NC}"
-print_curl "curl -s $BASE_URL/api/tasks/$CACHE_TASK_ID"
-START=$(python3 -c "import time; print(int(time.time()*1000))")
-RESP=$(curl -s "$BASE_URL/api/tasks/$CACHE_TASK_ID")
-END=$(python3 -c "import time; print(int(time.time()*1000))")
-print_json "$RESP"
-echo -e "  ${DIM}⏱ 耗时: $((END-START))ms${NC}"
-
-echo ""
-echo -e "  ${YELLOW}▸ 更新任务（清除缓存）${NC}"
-print_curl "curl -s -X PUT $BASE_URL/api/tasks/$CACHE_TASK_ID -H \"Content-Type: application/json\" -d '{\"title\":\"缓存已清除\",\"done\":true}'"
-RESP=$(curl -s -X PUT "$BASE_URL/api/tasks/$CACHE_TASK_ID" \
-    -H "Content-Type: application/json" \
-    -d '{"title":"缓存已清除","done":true}')
-print_json "$RESP"
-
-echo ""
-echo -e "  ${YELLOW}▸ 更新后请求（缓存已清除，重新查数据库）${NC}"
-print_curl "curl -s $BASE_URL/api/tasks/$CACHE_TASK_ID"
-START=$(python3 -c "import time; print(int(time.time()*1000))")
-RESP=$(curl -s "$BASE_URL/api/tasks/$CACHE_TASK_ID")
-END=$(python3 -c "import time; print(int(time.time()*1000))")
-print_json "$RESP"
-echo -e "  ${DIM}⏱ 耗时: $((END-START))ms${NC}"
-
-print_pass "缓存穿透测试完成"
-
-# ════════════════════════════════════════════════════════════
-# 7. Swagger 文档
-# ════════════════════════════════════════════════════════════
-print_section "7. Swagger 文档"
+print_section "5. Swagger 文档"
 
 echo ""
 echo -e "  ${YELLOW}▸ Swagger UI${NC}"
+
 print_curl_http "curl -s -o /dev/null -w \"%{http_code}\" $BASE_URL/swagger/index.html"
 HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$BASE_URL/swagger/index.html")
 print_http "$HTTP_CODE"

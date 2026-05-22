@@ -23,17 +23,58 @@
 }
 
 .error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   background: #fff2f0;
   border: 1px solid #ffccc7;
   color: #ff4d4f;
-  padding: 10px 16px;
-  border-radius: 6px;
+  padding: 12px 16px;
+  border-radius: 8px;
   margin-bottom: 16px;
   font-size: 14px;
+  animation: slideDown 0.3s ease;
+}
+
+.errorIcon {
+  flex-shrink: 0;
+  font-size: 16px;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .field {
   margin-bottom: 20px;
+}
+
+.fieldError {
+  margin-bottom: 20px;
+}
+
+.inputError {
+  border-color: #ff4d4f !important;
+}
+
+.inputError:focus {
+  box-shadow: 0 0 0 2px rgba(255, 77, 79, 0.2) !important;
+}
+
+.fieldErrorText {
+  margin: 4px 0 0 0;
+  font-size: 13px;
+  color: #ff4d4f;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .label {

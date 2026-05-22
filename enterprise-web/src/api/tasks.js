@@ -40,6 +40,16 @@ export function updateTask(id, title, done) {
 }
 
 /**
+ * 获取单个任务详情
+ *
+ * @param {number} id - 任务 ID
+ * @returns {Promise<object>} { data: Task }
+ */
+export function getTaskById(id) {
+  return client.get(`/tasks/${id}`);
+}
+
+/**
  * 删除任务
  *
  * @param {number} id - 任务 ID

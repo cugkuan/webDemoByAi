@@ -61,7 +61,7 @@ client.interceptors.response.use(
         window.location.href = '/login';
       }
     }
-    const message = error.response?.data?.error || error.message || '请求失败';
+    const message = error.response?.data?.message || error.response?.data?.error || error.message || '请求失败';
     return Promise.reject(new Error(message));
   }
 );

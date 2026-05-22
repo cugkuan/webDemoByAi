@@ -1,8 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { getTasksPage, createTask, updateTask, deleteTask } from '../../api/tasks';
 import Pagination from '../../components/Pagination/Pagination';
 import { TaskSkeleton } from '../../components/Skeleton/Skeleton';
 import TaskItem from '../../components/TaskItem/TaskItem';
+import ConfirmDialog from '../../components/ConfirmDialog/ConfirmDialog';
 import { usePageTitle } from '../../hooks/usePageTitle';
 import { PAGE_SIZE } from '../../config';
 import styles from './TasksPage.module.css';
@@ -14,6 +16,7 @@ import styles from './TasksPage.module.css';
  */
 export default function TasksPage() {
   usePageTitle('任务列表');
+  const navigate = useNavigate();
   const [tasks, setTasks] = useState([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -22,6 +25,7 @@ export default function TasksPage() {
   const [editTitle, setEditTitle] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
@@ -130,11 +134,17 @@ export default function TasksPage() {
     setEditTitle('');
   };
 
-  /** 删除任务 */
-  const handleDelete = async (id) => {
-    if (!window.confirm('确定要删除这个任务吗？')) return;
+  /** 点击删除按钮，弹出确认对话框 */
+  const handleDeleteClick = (id) => {
+    setDeleteTarget(id);
+  };
+
+  /** 确认删除 */
+  const handleDeleteConfirm = async () => {
+    if (deleteTarget === null) return;
     try {
-      await deleteTask(id);
+      await deleteTask(deleteTarget);
+      setDeleteTarget(null);
       // 如果当前页删完了且不是第一页，回到上一页
       const newTotal = total - 1;
       const newTotalPages = Math.max(1, Math.ceil(newTotal / PAGE_SIZE));
@@ -142,7 +152,18 @@ export default function TasksPage() {
       setPage(targetPage);
     } catch (err) {
       setError(err.message || '删除任务失败');
+      setDeleteTarget(null);
     }
+  };
+
+  /** 查看任务详情 */
+  const handleViewDetail = (id) => {
+    navigate(`/tasks/${id}`);
+  };
+
+  /** 取消删除 */
+  const handleDeleteCancel = () => {
+    setDeleteTarget(null);
   };
 
   // 首次加载显示骨架屏
@@ -206,7 +227,8 @@ export default function TasksPage() {
                 onEditTitleChange={handleEditTitleChange}
                 onSaveEdit={handleSaveEdit}
                 onCancelEdit={handleCancelEdit}
-                onDelete={handleDelete}
+                onDelete={handleDeleteClick}
+                onViewDetail={handleViewDetail}
               />
             ))}
           </ul>
@@ -220,6 +242,18 @@ export default function TasksPage() {
           onPageChange={setPage}
         />
       </div>
+
+      {/* 删除确认对话框 */}
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        title="删除任务"
+        message="确定要删除这个任务吗？此操作不可恢复。"
+        confirmText="删除"
+        cancelText="取消"
+        variant="danger"
+        onConfirm={handleDeleteConfirm}
+        onCancel={handleDeleteCancel}
+      />
     </div>
   );
 }

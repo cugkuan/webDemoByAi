@@ -1,0 +1,266 @@
+.container {
+  min-height: calc(100vh - 60px);
+  background: #f0f2f5;
+  padding: 40px 20px;
+}
+
+.card {
+  max-width: 640px;
+  margin: 0 auto;
+  background: #fff;
+  border-radius: 12px;
+  padding: 32px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+}
+
+/* 顶部导航 */
+.nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.backLink {
+  color: #667eea;
+  text-decoration: none;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.backLink:hover {
+  text-decoration: underline;
+}
+
+.taskId {
+  font-size: 13px;
+  color: #999;
+  font-family: monospace;
+}
+
+/* 错误提示 */
+.error {
+  background: #fff2f0;
+  border: 1px solid #ffccc7;
+  color: #ff4d4f;
+  padding: 10px 16px;
+  border-radius: 6px;
+  margin-bottom: 16px;
+  font-size: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.closeBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #ff4d4f;
+  font-size: 16px;
+}
+
+.errorCard {
+  max-width: 640px;
+  margin: 0 auto;
+  background: #fff;
+  border-radius: 12px;
+  padding: 48px 32px;
+  text-align: center;
+  color: #999;
+  font-size: 16px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+}
+
+.errorCard .backLink {
+  display: inline-block;
+  margin-top: 16px;
+}
+
+/* 标题区域 */
+.titleSection {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  margin-bottom: 24px;
+}
+
+.checkbox {
+  width: 22px;
+  height: 22px;
+  margin-top: 4px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.title {
+  flex: 1;
+  font-size: 22px;
+  font-weight: 600;
+  color: #333;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.titleDone {
+  text-decoration: line-through;
+  color: #999;
+}
+
+.editGroup {
+  flex: 1;
+  display: flex;
+  gap: 8px;
+}
+
+.editInput {
+  flex: 1;
+  padding: 10px 14px;
+  border: 1px solid #667eea;
+  border-radius: 6px;
+  font-size: 16px;
+  outline: none;
+}
+
+.saveBtn {
+  padding: 10px 20px;
+  background: #52c41a;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.saveBtn:hover {
+  background: #45a818;
+}
+
+.cancelBtn {
+  padding: 10px 20px;
+  background: #d9d9d9;
+  color: #666;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.cancelBtn:hover {
+  background: #bfbfbf;
+}
+
+/* 元信息 */
+.meta {
+  border-top: 1px solid #f0f0f0;
+  padding-top: 20px;
+  margin-bottom: 28px;
+}
+
+.metaItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.metaLabel {
+  font-size: 14px;
+  color: #999;
+  min-width: 48px;
+}
+
+.status {
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.statusPending {
+  color: #faad14;
+}
+
+.statusDone {
+  color: #52c41a;
+}
+
+/* 操作按钮 */
+.actions {
+  display: flex;
+  gap: 12px;
+}
+
+.editBtn {
+  padding: 10px 24px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.editBtn:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.editBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.deleteBtn {
+  padding: 10px 24px;
+  background: #fff;
+  color: #ff4d4f;
+  border: 1px solid #ff4d4f;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.deleteBtn:hover {
+  background: #fff2f0;
+}
+
+/* 骨架屏 */
+.skeleton {
+  max-width: 640px;
+  margin: 0 auto;
+  background: #fff;
+  border-radius: 12px;
+  padding: 32px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+}
+
+.skeletonLine {
+  height: 20px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+  margin-bottom: 16px;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* 响应式 */
+@media (max-width: 480px) {
+  .card {
+    padding: 20px;
+  }
+  .title {
+    font-size: 18px;
+  }
+  .editGroup {
+    flex-wrap: wrap;
+  }
+  .actions {
+    flex-direction: column;
+  }
+}

@@ -10,7 +10,8 @@ import NotFoundPage from './pages/NotFoundPage/NotFoundPage';
 // 路由级代码分割
 const LoginPage = lazy(() => import('./pages/LoginPage/LoginPage'));
 const RegisterPage = lazy(() => import('./pages/RegisterPage/RegisterPage'));
-const TasksPage = lazy(() => import('./pages/TasksPage/TasksPage'));
+const TasksPage = lazy(() => import('./pages/tasks/TasksPage'));
+const TaskDetailPage = lazy(() => import('./pages/tasks/TaskDetailPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage/ProfilePage'));
 
 // 懒加载时的回退组件
@@ -43,6 +44,9 @@ function App() {
               <Route path="/register" element={<RegisterPage />} />
               <Route path="/tasks" element={
                 <ProtectedRoute><TasksPage /></ProtectedRoute>
+              } />
+              <Route path="/tasks/:id" element={
+                <ProtectedRoute><TaskDetailPage /></ProtectedRoute>
               } />
               <Route path="/profile" element={
                 <ProtectedRoute><ProfilePage /></ProtectedRoute>

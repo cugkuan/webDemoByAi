@@ -14,6 +14,7 @@ import styles from './TaskItem.module.css';
  * @param {function} props.onSaveEdit - 保存编辑
  * @param {function} props.onCancelEdit - 取消编辑
  * @param {function} props.onDelete - 删除任务
+ * @param {function} props.onViewDetail - 查看详情
  */
 function TaskItem({
   task,
@@ -25,6 +26,7 @@ function TaskItem({
   onSaveEdit,
   onCancelEdit,
   onDelete,
+  onViewDetail,
 }) {
   return (
     <li
@@ -67,8 +69,8 @@ function TaskItem({
         <>
           <span
             className={`${styles.title}${task.done ? ` ${styles.titleDone}` : ''}`}
-            onDoubleClick={() => !task.done && onStartEdit(task)}
-            title={task.done ? '任务已完成' : '双击编辑'}
+            onClick={() => onViewDetail?.(task.id)}
+            title="点击查看详情"
           >
             {task.title}
           </span>

@@ -10,4 +10,10 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
+  // https://vitest.dev/config/
+  test: {
+    environment: 'jsdom',
+    globals: true,
+    setupFiles: [],
+  },
 })

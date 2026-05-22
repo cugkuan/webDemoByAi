@@ -23,11 +23,11 @@ button:hover {
 
 button:disabled {
   opacity: 0.6;
-  cursor: not-allowed !important;
+  cursor: not-allowed;
 }
 
 input:focus {
-  border-color: #667eea !important;
+  border-color: #667eea;
   box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
 }
 
@@ -54,85 +54,5 @@ input:focus {
   }
   100% {
     background-position: 200% 0;
-  }
-}
-
-/* ========== 响应式布局 ========== */
-
-/* 平板 (≤768px) */
-@media (max-width: 768px) {
-  body {
-    font-size: 14px;
-  }
-
-  /* Navbar: 隐藏"任务列表"链接 */
-  nav a[href="/tasks"] {
-    display: none;
-  }
-
-  /* HomePage: 缩小标题和内边距 */
-  h1 {
-    font-size: 32px !important;
-  }
-
-  /* Login/Register: 卡片全宽 */
-  form > div {
-    padding: 30px 24px !important;
-  }
-}
-
-/* 手机 (≤480px) */
-@media (max-width: 480px) {
-  body {
-    font-size: 13px;
-  }
-
-  /* Navbar: 缩小品牌文字 */
-  nav a[href="/"] {
-    font-size: 16px !important;
-  }
-
-  /* Navbar: 隐藏用户名 */
-  nav a[href="/profile"] {
-    font-size: 0 !important;
-  }
-  nav a[href="/profile"]::before {
-    content: "👤";
-    font-size: 15px !important;
-  }
-
-  /* Navbar: 链接间距缩小 */
-  nav div > div {
-    gap: 8px !important;
-  }
-
-  /* HomePage: 特性网格单列 */
-  .features-grid {
-    grid-template-columns: 1fr !important;
-  }
-
-  /* TasksPage: 创建表单垂直排列 */
-  .task-create-form {
-    flex-direction: column !important;
-  }
-  .task-create-form button {
-    width: 100% !important;
-  }
-
-  /* TasksPage: 任务项垂直排列 */
-  .task-item {
-    flex-wrap: wrap !important;
-  }
-
-  /* ProfilePage: 卡片内边距缩小 */
-  .profile-card {
-    padding: 16px !important;
-  }
-
-  /* Pagination: 分页按钮缩小 */
-  .pagination-btn {
-    padding: 4px 8px !important;
-    min-width: 28px !important;
-    font-size: 12px !important;
   }
 }

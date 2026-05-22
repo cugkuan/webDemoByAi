@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { AuthContext } from './AuthContext';
 import { login as apiLogin, register as apiRegister } from '../api/auth';
+import { clearAuth, STORAGE_KEYS } from '../api/client';
 
 /**
  * 认证 Provider
@@ -10,14 +11,14 @@ import { login as apiLogin, register as apiRegister } from '../api/auth';
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
     try {
-      const saved = localStorage.getItem('user');
+      const saved = localStorage.getItem(STORAGE_KEYS.USER);
       return saved ? JSON.parse(saved) : null;
     } catch {
       return null;
     }
   });
 
-  const [token, setToken] = useState(() => localStorage.getItem('token'));
+  const [token, setToken] = useState(() => localStorage.getItem(STORAGE_KEYS.TOKEN));
   const [loading, setLoading] = useState(false);
 
   const isAuthenticated = !!token;
@@ -25,18 +26,18 @@ export function AuthProvider({ children }) {
   // token 变化时同步到 localStorage
   useEffect(() => {
     if (token) {
-      localStorage.setItem('token', token);
+      localStorage.setItem(STORAGE_KEYS.TOKEN, token);
     } else {
-      localStorage.removeItem('token');
+      localStorage.removeItem(STORAGE_KEYS.TOKEN);
     }
   }, [token]);
 
   // user 变化时同步到 localStorage
   useEffect(() => {
     if (user) {
-      localStorage.setItem('user', JSON.stringify(user));
+      localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
     } else {
-      localStorage.removeItem('user');
+      localStorage.removeItem(STORAGE_KEYS.USER);
     }
   }, [user]);
 
@@ -45,7 +46,7 @@ export function AuthProvider({ children }) {
     setLoading(true);
     try {
       const res = await apiLogin(username, password);
-      const { token: newToken, user: userData } = res.data;
+      const { token: newToken, user: userData } = res.data.data;
       setToken(newToken);
       setUser(userData);
       return { success: true };
@@ -61,7 +62,7 @@ export function AuthProvider({ children }) {
     setLoading(true);
     try {
       const res = await apiRegister(username, password);
-      const { token: newToken, user: userData } = res.data;
+      const { token: newToken, user: userData } = res.data.data;
       setToken(newToken);
       setUser(userData);
       return { success: true };
@@ -74,6 +75,7 @@ export function AuthProvider({ children }) {
 
   /** 退出登录 */
   const logout = useCallback(async () => {
+    clearAuth();
     setToken(null);
     setUser(null);
   }, []);

@@ -12,7 +12,7 @@ import client from './client';
  * @returns {Promise<object>} { data: { version, service, cache } }
  */
 export function getSysInfo() {
-  return client.get('/system/info');
+  return client.get('/sys/info');
 }
 
 /**
@@ -21,7 +21,7 @@ export function getSysInfo() {
  * @returns {Promise<object>} { data: { uptime, cache, database } }
  */
 export function getSysStats() {
-  return client.get('/system/stats');
+  return client.get('/sys/stats');
 }
 
 /**

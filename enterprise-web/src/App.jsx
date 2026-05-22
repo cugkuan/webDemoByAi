@@ -1,16 +1,17 @@
 import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthProvider';
-import ErrorBoundary from './components/ErrorBoundary';
-import Navbar from './components/Navbar';
-import ProtectedRoute from './components/ProtectedRoute';
-import HomePage from './pages/HomePage';
+import ErrorBoundary from './components/ErrorBoundary/ErrorBoundary';
+import Navbar from './components/Navbar/Navbar';
+import ProtectedRoute from './components/ProtectedRoute/ProtectedRoute';
+import HomePage from './pages/HomePage/HomePage';
+import NotFoundPage from './pages/NotFoundPage/NotFoundPage';
 
 // 路由级代码分割
-const LoginPage = lazy(() => import('./pages/LoginPage'));
-const RegisterPage = lazy(() => import('./pages/RegisterPage'));
-const TasksPage = lazy(() => import('./pages/TasksPage'));
-const ProfilePage = lazy(() => import('./pages/ProfilePage'));
+const LoginPage = lazy(() => import('./pages/LoginPage/LoginPage'));
+const RegisterPage = lazy(() => import('./pages/RegisterPage/RegisterPage'));
+const TasksPage = lazy(() => import('./pages/TasksPage/TasksPage'));
+const ProfilePage = lazy(() => import('./pages/ProfilePage/ProfilePage'));
 
 // 懒加载时的回退组件
 function PageFallback() {
@@ -46,6 +47,8 @@ function App() {
               <Route path="/profile" element={
                 <ProtectedRoute><ProfilePage /></ProtectedRoute>
               } />
+              {/* 404 兜底路由 */}
+              <Route path="*" element={<NotFoundPage />} />
             </Routes>
           </Suspense>
         </AuthProvider>

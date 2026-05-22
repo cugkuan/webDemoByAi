@@ -54,41 +54,6 @@ func TestTaskService_CreateTask(t *testing.T) {
 	}
 }
 
-func TestTaskService_GetAllTasks_FromDB(t *testing.T) {
-	svc, _, repo := newTestService(t)
-
-	// 先创建一些任务
-	repo.Create(&model.Task{Title: "task1"})
-	repo.Create(&model.Task{Title: "task2"})
-
-	tasks, err := svc.GetAllTasks()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(tasks) != 2 {
-		t.Errorf("tasks = %d, want 2", len(tasks))
-	}
-}
-
-func TestTaskService_GetAllTasks_FromL1Cache(t *testing.T) {
-	svc, c, _ := newTestService(t)
-
-	// 设置 L1 缓存
-	expected := []model.Task{{ID: 1, Title: "cached"}}
-	c.SetL1(cache.AllTasksCacheKey, expected)
-
-	tasks, err := svc.GetAllTasks()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(tasks) != 1 {
-		t.Errorf("tasks = %d, want 1", len(tasks))
-	}
-	if tasks[0].Title != "cached" {
-		t.Errorf("Title = %s, want cached", tasks[0].Title)
-	}
-}
-
 func TestTaskService_GetTaskByID_FromDB(t *testing.T) {
 	svc, _, repo := newTestService(t)
 

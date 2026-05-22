@@ -89,8 +89,7 @@ func Setup(cfg *config.Config, db *gorm.DB, c *cache.Cache, log zerolog.Logger) 
 		// 任务相关路由
 		taskGroup := protected.Group("/tasks")
 		{
-			taskGroup.GET("", taskH.GetTasks)
-			taskGroup.GET("/page", taskH.GetTasksPage)
+			taskGroup.GET("", taskH.GetTasksPage)
 			taskGroup.GET("/count", taskH.CountTasks)
 			taskGroup.GET("/:id", taskH.GetTask)
 			taskGroup.POST("", taskH.CreateTask)

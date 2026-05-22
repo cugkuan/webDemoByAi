@@ -38,32 +38,6 @@ func TestTaskRepo_Create(t *testing.T) {
 	}
 }
 
-func TestTaskRepo_FindAll(t *testing.T) {
-	repo := newTestRepo(t)
-
-	// 初始应该为空
-	tasks, err := repo.FindAll()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(tasks) != 0 {
-		t.Errorf("tasks = %d, want 0", len(tasks))
-	}
-
-	// 创建 3 个任务
-	for i := 0; i < 3; i++ {
-		repo.Create(&model.Task{Title: "task"})
-	}
-
-	tasks, err = repo.FindAll()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(tasks) != 3 {
-		t.Errorf("tasks = %d, want 3", len(tasks))
-	}
-}
-
 func TestTaskRepo_FindByID(t *testing.T) {
 	repo := newTestRepo(t)
 
@@ -170,26 +144,3 @@ func TestTaskRepo_AutoMigrate(t *testing.T) {
 	}
 }
 
-func TestTaskRepo_FindAll_Order(t *testing.T) {
-	repo := newTestRepo(t)
-
-	// 创建任务，ID 递增
-	repo.Create(&model.Task{Title: "first"})
-	repo.Create(&model.Task{Title: "second"})
-	repo.Create(&model.Task{Title: "third"})
-
-	tasks, err := repo.FindAll()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// 应该按 ID DESC 排序
-	if len(tasks) >= 3 {
-		if tasks[0].Title != "third" {
-			t.Errorf("first result = %s, want third", tasks[0].Title)
-		}
-		if tasks[2].Title != "first" {
-			t.Errorf("last result = %s, want first", tasks[2].Title)
-		}
-	}
-}

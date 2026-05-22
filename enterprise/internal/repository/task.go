@@ -16,15 +16,6 @@ func NewTaskRepo(db *gorm.DB) *TaskRepo {
 	return &TaskRepo{db: db}
 }
 
-// FindAll 获取所有任务
-func (r *TaskRepo) FindAll() ([]model.Task, error) {
-	var tasks []model.Task
-	if err := r.db.Order("id DESC").Find(&tasks).Error; err != nil {
-		return nil, err
-	}
-	return tasks, nil
-}
-
 // FindPage 分页获取任务
 func (r *TaskRepo) FindPage(page, pageSize int) ([]model.Task, int64, error) {
 	var tasks []model.Task

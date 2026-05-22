@@ -38,7 +38,7 @@ func setupTest(t *testing.T) (*TaskHandler, *gin.Engine) {
 
 	gin.SetMode(gin.TestMode)
 	r := gin.New()
-	r.GET("/api/tasks", h.GetTasks)
+	r.GET("/api/tasks", h.GetTasksPage)
 	r.GET("/api/tasks/:id", h.GetTask)
 	r.POST("/api/tasks", h.CreateTask)
 	r.PUT("/api/tasks/:id", h.UpdateTask)

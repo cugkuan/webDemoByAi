@@ -34,45 +34,6 @@ func (s *TaskService) GetTasksPage(page, pageSize int) ([]model.Task, int64, err
 	return s.repo.FindPage(page, pageSize)
 }
 
-// GetAllTasks 获取所有任务（带缓存穿透）
-func (s *TaskService) GetAllTasks() ([]model.Task, error) {
-	ctx := context.Background()
-
-	// L1 缓存检查
-	if val, ok := s.cache.GetL1(cache.AllTasksCacheKey); ok {
-		if tasks, ok := val.([]model.Task); ok {
-			s.log.Debug().Msg("CACHE HIT: L1 - 获取所有任务")
-			return tasks, nil
-		}
-		s.log.Debug().Msg("CACHE INVALID: L1 缓存类型异常，跳过")
-	}
-	s.log.Debug().Msg("CACHE MISS: L1 - 获取所有任务")
-
-	// L2 缓存检查
-	var tasks []model.Task
-	if found, err := s.cache.GetL2(ctx, cache.AllTasksCacheKey, &tasks); found && err == nil {
-		s.log.Debug().Msg("CACHE HIT: L2 - 获取所有任务，回写到 L1")
-		s.cache.SetL1(cache.AllTasksCacheKey, tasks)
-		return tasks, nil
-	}
-	s.log.Debug().Msg("CACHE MISS: L2 - 获取所有任务")
-
-	// 从数据库查询
-	s.log.Debug().Msg("DB QUERY: SELECT 所有任务")
-	tasks, err := s.repo.FindAll()
-	if err != nil {
-		s.log.Error().Err(err).Msg("数据库查询失败")
-		return nil, err
-	}
-	s.log.Debug().Int("count", len(tasks)).Msg("DB SUCCESS: 查询到任务记录")
-
-	// 写入缓存（L1 和 L2）
-	s.cache.SetL1(cache.AllTasksCacheKey, tasks)
-	s.cache.SetL2(ctx, cache.AllTasksCacheKey, tasks)
-
-	return tasks, nil
-}
-
 // GetTaskByID 根据 ID 获取任务（带缓存穿透）
 func (s *TaskService) GetTaskByID(id uint) (*model.Task, error) {
 	ctx := context.Background()

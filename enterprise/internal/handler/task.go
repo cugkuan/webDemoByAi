@@ -31,18 +31,7 @@ func NewTaskHandler(svc *service.TaskService, c *cache.Cache, log zerolog.Logger
 	}
 }
 
-// GetTasks 获取所有任务
-func (h *TaskHandler) GetTasks(c *gin.Context) {
-	tasks, err := h.svc.GetAllTasks()
-	if err != nil {
-		c.Error(err)
-		return
-	}
-
-	c.PureJSON(http.StatusOK, response.Success(tasks))
-}
-
-// GetTasksPage 分页获取任务
+// GetTasksPage 分页获取任务（默认每页 10 条）
 func (h *TaskHandler) GetTasksPage(c *gin.Context) {
 	pageStr := c.DefaultQuery("page", "1")
 	pageSizeStr := c.DefaultQuery("page_size", "10")
